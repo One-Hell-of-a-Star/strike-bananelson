@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BANANA STRIKE 80s - Neo-Arcade Space Shooter</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Press+Start+2P&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        neonCyan: '#00f3ff',
+                        neonPink: '#ff007f',
+                        neonPurple: '#1a0b2e',
+                        neonYellow: '#ffe600',
+                        neonGreen: '#00ff66',
+                        darkBg: '#090314',
+                    },
+                    fontFamily: {
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        arcade: ['"Press Start 2P"', 'cursive'],
+                        rajdhani: ['Rajdhani', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #090314;
+            color: #ffffff;
+            font-family: 'Rajdhani', sans-serif;
+            overflow: hidden;
+            touch-action: none;
+            user-select: none;
+        }
+
+        .crt::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            z-index: 40;
+            background-size: 100% 3px, 6px 100%;
+            pointer-events: none;
+        }
+
+        .glow-pink { text-shadow: 0 0 8px #ff007f, 0 0 20px #ff007f, 0 0 30px #ff007f; }
+        .glow-cyan { text-shadow: 0 0 8px #00f3ff, 0 0 20px #00f3ff, 0 0 30px #00f3ff; }
+        .glow-yellow { text-shadow: 0 0 8px #ffe600, 0 0 20px #ffe600, 0 0 30px #ffe600; }
+        .box-glow-cyan { box-shadow: 0 0 15px rgba(0, 243, 255, 0.4), inset 0 0 10px rgba(0, 243, 255, 0.2); }
+        .box-glow-pink { box-shadow: 0 0 15px rgba(255, 0, 127, 0.4), inset 0 0 10px rgba(255, 0, 127, 0.2); }
+        .box-glow-yellow { box-shadow: 0 0 15px rgba(255, 230, 0, 0.4), inset 0 0 10px rgba(255, 230, 0, 0.2); }
+
+        canvas {
+            display: block;
+            touch-action: none;
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #1a0b2e; }
+        ::-webkit-scrollbar-thumb { background: #ff007f; border-radius: 3px; }
+
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.85; transform: scale(0.98); }
+        }
+        .animate-pulse-fast { animation: pulse-glow 1.5s infinite ease-in-out; }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col justify-between crt relative overflow-hidden bg-darkBg select-none">
+
+    <!-- TOP HUD BAR -->
+    <header class="w-full bg-neonPurple/80 border-b-2 border-neonCyan/50 px-4 py-2 z-30 backdrop-blur-md flex justify-between items-center text-xs md:text-sm">
+        <div class="flex items-center space-x-4">
+            <h1 class="font-arcade text-neonYellow text-xs md:text-base glow-yellow tracking-wider flex items-center gap-2">
+                🍌 BANANA STRIKE 80s
+            </h1>
+            <div class="hidden md:flex items-center gap-2 bg-black/40 px-3 py-1 rounded border border-neonPink/30 font-orbitron text-xs">
+                <span class="text-gray-400">BEST:</span>
+                <span id="hud-highscore" class="text-neonYellow font-bold">000000</span>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-3 md:space-x-6 font-orbitron">
+            <div class="flex flex-col items-end">
+                <span class="text-[10px] text-neonCyan tracking-widest">SCORE</span>
+                <span id="hud-score" class="text-base md:text-xl font-bold text-white glow-cyan">000000</span>
+            </div>
+
+            <div class="w-24 md:w-36 flex flex-col gap-1">
+                <div class="flex justify-between text-[10px]">
+                    <span class="text-neonPink font-bold">ESCUDO</span>
+                    <span id="hud-hp-text" class="text-white">100%</span>
+                </div>
+                <div class="w-full bg-black/60 h-2.5 rounded-full p-0.5 border border-neonPink/40">
+                    <div id="hud-hp-bar" class="bg-gradient-to-r from-neonPink to-neonYellow h-full rounded-full transition-all duration-300" style="width: 100%;"></div>
+                </div>
+            </div>
+
+            <div class="bg-black/50 px-2 py-1 rounded border border-neonCyan/40 text-center">
+                <span class="text-[9px] block text-gray-400">COMBO</span>
+                <span id="hud-combo" class="text-neonYellow font-bold text-sm md:text-base">x1</span>
+            </div>
+
+            <button id="btn-toggle-settings" class="bg-neonPink/20 hover:bg-neonPink/40 text-neonPink border border-neonPink px-3 py-1.5 rounded transition font-orbitron text-xs flex items-center gap-1">
+                <i class="fa-solid fa-gear"></i> <span class="hidden sm:inline">PAUSA</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN GAME CONTAINER -->
+    <main class="relative flex-1 w-full h-full flex items-center justify-center overflow-hidden">
+        <canvas id="gameCanvas" class="absolute inset-0 z-10 w-full h-full cursor-crosshair"></canvas>
+
+        <!-- TOUCH CONTROLS -->
+        <div id="touch-controls" class="absolute inset-0 z-20 pointer-events-none flex justify-between items-end p-4 md:hidden">
+            <div id="dpad-zone" class="w-36 h-36 bg-neonPurple/40 backdrop-blur-md rounded-full border border-neonCyan/40 pointer-events-auto relative flex items-center justify-center opacity-80 touch-none">
+                <div class="absolute w-12 h-12 bg-neonCyan/30 rounded-full border border-neonCyan/60 pointer-events-none" id="dpad-stick"></div>
+                <div class="text-[10px] font-orbitron text-neonCyan/60 absolute bottom-1">DIREÇÃO</div>
+            </div>
+            <div class="flex flex-col gap-3 pointer-events-auto items-center">
+                <button id="btn-touch-fire" class="w-16 h-16 rounded-full bg-neonYellow/90 border-2 border-white text-black font-orbitron font-bold active:scale-95 shadow-lg box-glow-yellow flex flex-col items-center justify-center text-xs">
+                    <span class="text-xl">🍌</span>
+                    <span>ATIRAR</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- OVERLAY / MENU -->
+        <div id="overlay-screen" class="absolute inset-0 z-30 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-4 transition-all duration-300">
+            <div class="max-w-xl w-full bg-neonPurple/90 border-2 border-neonYellow rounded-2xl p-6 shadow-2xl box-glow-yellow text-center relative overflow-hidden max-h-[90vh] overflow-y-auto">
+                <div class="absolute -top-12 -left-12 w-32 h-32 bg-neonYellow/30 rounded-full blur-2xl"></div>
+                <div class="absolute -bottom-12 -right-12 w-32 h-32 bg-neonCyan/30 rounded-full blur-2xl"></div>
+
+                <div class="mb-4">
+                    <p class="text-neonYellow font-arcade text-xs mb-2 tracking-widest animate-pulse-fast">★ DESAFIO BANANA RETRO 80S ★</p>
+                    <h2 id="menu-title" class="font-arcade text-2xl md:text-3xl text-neonYellow glow-yellow leading-relaxed">
+                        BANANA STRIKE<br><span class="text-neonPink glow-pink">80s</span>
+                    </h2>
+                    <p id="menu-subtitle" class="text-gray-300 font-rajdhani text-base md:text-lg mt-2">
+                        Bora rodar! Desvie dos perigos espaciais e solte o poder das bananas neon! 🚀🍌
+                    </p>
+                </div>
+
+                <!-- AVATAR CUSTOMIZATION -->
+                <div class="my-3 bg-black/50 p-3 rounded-xl border border-neonYellow/40 flex items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <div class="relative w-14 h-14 rounded-full border-2 border-neonYellow overflow-hidden shadow-lg box-glow-yellow bg-neonPurple flex items-center justify-center">
+                            <img id="avatar-preview" class="w-full h-full object-cover" alt="Avatar">
+                        </div>
+                        <div class="text-left">
+                            <span class="block font-orbitron text-xs text-neonYellow font-bold">SEU AVATAR PILOTO</span>
+                            <span class="text-[11px] text-gray-300 font-rajdhani">Personagem atual no campo de batalha.</span>
+                        </div>
+                    </div>
+                    <label class="cursor-pointer bg-neonYellow/20 hover:bg-neonYellow/40 text-neonYellow border border-neonYellow font-orbitron text-xs px-3 py-2 rounded-lg transition active:scale-95 flex items-center gap-1.5 whitespace-nowrap">
+                        <i class="fa-solid fa-camera"></i>
+                        <span>Trocar Foto</span>
+                        <input type="file" id="upload-avatar" accept="image/*" class="hidden">
+                    </label>
+                </div>
+
+                <!-- GAME STATS -->
+                <div id="game-stats-container" class="hidden my-4 bg-black/60 rounded-xl p-4 border border-neonPink/30 font-orbitron text-left text-xs md:text-sm grid grid-cols-2 gap-3">
+                    <div><span class="text-gray-400">Pontuação Total:</span> <span id="stat-score" class="text-neonCyan font-bold">0</span></div>
+                    <div><span class="text-gray-400">Inimigos Abatidos:</span> <span id="stat-kills" class="text-neonPink font-bold">0</span></div>
+                    <div><span class="text-gray-400">Precisão dos Disparos:</span> <span id="stat-accuracy" class="text-neonYellow font-bold">0%</span></div>
+                    <div><span class="text-gray-400">Tempo de Voo:</span> <span id="stat-time" class="text-neonGreen font-bold">0s</span></div>
+                </div>
+
+                <!-- CONTROL MODES -->
+                <div class="my-4 bg-black/40 p-3 rounded-xl border border-neonCyan/30 text-left">
+                    <label class="block font-orbitron text-xs text-neonCyan mb-2 font-bold uppercase tracking-wider">
+                        <i class="fa-solid fa-sliders text-neonPink"></i> SIMPLIFICAÇÃO DE CONTROLES:
+                    </label>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                        <button class="btn-control-mode bg-neonCyan/25 border border-neonCyan text-neonCyan py-2 px-3 rounded text-xs font-orbitron transition text-left" data-mode="follow">
+                            <div class="font-bold">🎯 Mouse/Touch Direto</div>
+                            <div class="text-[10px] text-gray-300 font-rajdhani">O avatar segue o toque ou cursor.</div>
+                        </button>
+                        <button class="btn-control-mode bg-black/50 border border-gray-700 text-gray-400 py-2 px-3 rounded text-xs font-orbitron transition text-left" data-mode="dpad">
+                            <div class="font-bold">🕹️ Joystick / WASD</div>
+                            <div class="text-[10px] text-gray-300 font-rajdhani">Controle livre por setas/teclado.</div>
+                        </button>
+                        <button class="btn-control-mode bg-black/50 border border-gray-700 text-gray-400 py-2 px-3 rounded text-xs font-orbitron transition text-left" data-mode="autofire">
+                            <div class="font-bold">🔥 Modo Banana Ativado</div>
+                            <div class="text-[10px] text-gray-300 font-rajdhani">Movimento suave + Disparo Auto!</div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ACTION BUTTONS -->
+                <div class="flex flex-col sm:flex-row gap-3 mt-4">
+                    <button id="btn-start-game" class="flex-1 bg-gradient-to-r from-neonYellow via-neonPink to-purple-600 hover:opacity-90 text-black font-orbitron font-bold py-3.5 px-6 rounded-xl border-2 border-neonYellow shadow-lg box-glow-yellow transition active:scale-95 text-base tracking-wider flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-play"></i> <span id="btn-start-text">INICIAR MISSÃO BANANA</span>
+                    </button>
+                    <button id="btn-toggle-sound" class="bg-black/60 hover:bg-black/80 text-neonYellow border border-neonYellow/50 font-orbitron px-4 py-3.5 rounded-xl transition flex items-center justify-center gap-2 text-xs">
+                        <i id="sound-icon" class="fa-solid fa-volume-high"></i> <span id="sound-text">SOM ON</span>
+                    </button>
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-white/10 text-[11px] text-gray-400 flex justify-between items-center font-rajdhani">
+                    <span><i class="fa-keyboard text-neonCyan"></i> <b>WASD</b> = Mover</span>
+                    <span><b>Espaço</b> = Disparar</span>
+                    <span><b>P</b> = Pausa</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SIDE PANEL DESKTOP -->
+        <aside class="hidden xl:flex absolute left-4 top-20 z-20 w-64 bg-neonPurple/70 backdrop-blur-md border border-neonCyan/40 rounded-xl p-4 flex-col gap-4 text-xs font-orbitron shadow-xl">
+            <h3 class="text-neonCyan font-bold border-b border-neonCyan/30 pb-2 flex items-center gap-2">
+                <i class="fa-solid fa-chart-line"></i> PAINEL DE VÔO BANANA
+            </h3>
+            <div class="space-y-2">
+                <div class="flex justify-between">
+                    <span class="text-gray-400">Nível do Setor:</span>
+                    <span id="side-level" class="text-neonYellow font-bold">01</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-400">Velocidade Giro:</span>
+                    <span id="side-speed" class="text-neonCyan">100%</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-400">Munição Atual:</span>
+                    <span id="side-weapon" class="text-neonPink">Banana Dupla</span>
+                </div>
+            </div>
+            <div class="mt-2 border-t border-neonCyan/30 pt-3">
+                <h4 class="text-neonYellow font-bold text-[11px] mb-1">DICA DA ACELERAÇÃO:</h4>
+                <p class="text-[11px] text-gray-300 font-rajdhani leading-snug">
+                    "Colete as Super Bananas douradas para liberar o modo de disparo triplo devastador!"
+                </p>
+            </div>
+        </aside>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="w-full bg-neonPurple/90 border-t border-neonCyan/30 px-4 py-1.5 z-30 flex justify-between items-center text-[11px] font-orbitron text-gray-400">
+        <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-neonYellow animate-ping"></span>
+            <span>MODO BANANA STRIKE ONLINE</span>
+        </div>
+        <div class="text-neonCyan">
+            EDTECH ACCELERATOR &copy; 2026
+        </div>
+    </footer>
+
+    <!-- JAVASCRIPT GAME ENGINE -->
+    <script>
+        // --- MÓDULO DE ÁUDIO (Web Audio API Synthesizer) ---
+        class AudioEngine {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+            }
+
+            playBananaShoot() {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(800, this.ctx.currentTime + 0.08);
+                osc.frequency.exponentialRampToValueAtTime(200, this.ctx.currentTime + 0.15);
+                
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.15);
+            }
+
+            playExplosion() {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(120, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(20, this.ctx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.35, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.3);
+            }
+
+            playPowerup() {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(300, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(900, this.ctx.currentTime + 0.25);
+                gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.25);
+            }
+        }
+
+        const audio = new AudioEngine();
+        const DEFAULT_AVATAR_URL = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%231a0b2e"/><circle cx="50" cy="40" r="25" fill="%23ffe600"/><ellipse cx="50" cy="80" rx="35" ry="20" fill="%2300f3ff"/></svg>';
+
+        // --- ESTADO DO JOGO ---
+        const State = {
+            isPlaying: false,
+            isPaused: false,
+            score: 0,
+            highscore: localStorage.getItem('banana_highscore') || 0,
+            health: 100,
+            combo: 1,
+            level: 1,
+            kills: 0,
+            shotsFired: 0,
+            shotsHit: 0,
+            flightTime: 0,
+            controlMode: 'follow', // follow, dpad, autofire
+            avatarImage: null
+        };
+
+        // Elementos DOM
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const overlayScreen = document.getElementById('overlay-screen');
+        const hudScore = document.getElementById('hud-score');
+        const hudHighscore = document.getElementById('hud-highscore');
+        const hudHpBar = document.getElementById('hud-hp-bar');
+        const hudHpText = document.getElementById('hud-hp-text');
+        const hudCombo = document.getElementById('hud-combo');
+        const avatarPreview = document.getElementById('avatar-preview');
+
+        avatarPreview.src = DEFAULT_AVATAR_URL;
+        hudHighscore.textContent = String(State.highscore).padStart(6, '0');
+
+        // Redimensionar Canvas
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Entidades do Jogo
+        let player = {
+            x: window.innerWidth / 2,
+            y: window.innerHeight - 100,
+            radius: 25,
+            speed: 6,
+            targetX: window.innerWidth / 2,
+            targetY: window.innerHeight - 100
+        };
+
+        let bullets = [];
+        let enemies = [];
+        let particles = [];
+        let stars = [];
+
+        // Inicializar estrelas de fundo
+        for (let i = 0; i < 100; i++) {
+            stars.push({
+                x: Math.random() * window.innerWidth,
+                y: Math.random() * window.innerHeight,
+                size: Math.random() * 2,
+                speed: Math.random() * 2 + 0.5
+            });
+        }
+
+        // Teclado
+        const keys = {};
+        window.addEventListener('keydown', e => {
+            keys[e.key.toLowerCase()] = true;
+            if (e.key === ' ' && State.isPlaying && !State.isPaused) {
+                fireBullet();
+            }
+            if (e.key.toLowerCase() === 'p' && State.isPlaying) {
+                togglePause();
+            }
+        });
+        window.addEventListener('keyup', e => {
+            keys[e.key.toLowerCase()] = false;
+        });
+
+        // Mouse e Touch
+        let mouseX = player.x;
+        let mouseY = player.y;
+
+        canvas.addEventListener('mousemove', e => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+
+        canvas.addEventListener('click', () => {
+            if (State.isPlaying && !State.isPaused && State.controlMode === 'follow') {
+                fireBullet();
+            }
+        });
+
+        // Disparo
+        function fireBullet() {
+            audio.init();
+            audio.playBananaShoot();
+            State.shotsFired++;
+            bullets.push({
+                x: player.x,
+                y: player.y - player.radius,
+                speed: 12,
+                radius: 6
+            });
+        }
+
+        // Spawn de Inimigos
+        function spawnEnemy() {
+            if (!State.isPlaying || State.isPaused) return;
+            enemies.push({
+                x: Math.random() * (canvas.width - 60) + 30,
+                y: -40,
+                radius: 20 + Math.random() * 15,
+                speed: 2 + Math.random() * 2 + (State.level * 0.5),
+                health: 2
+            });
+        }
+        setInterval(spawnEnemy, 1200);
+
+        // Partículas de explosão
+        function createExplosion(x, y, color) {
+            audio.playExplosion();
+            for (let i = 0; i < 15; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 8,
+                    vy: (Math.random() - 0.5) * 8,
+                    radius: Math.random() * 4 + 1,
+                    color: color,
+                    alpha: 1
+                });
+            }
+        }
+
+        // Loop Principal do Jogo
+        let lastTime = performance.now();
+        function gameLoop(time) {
+            const dt = (time - lastTime) / 1000;
+            lastTime = time;
+
+            if (State.isPlaying && !State.isPaused) {
+                update(dt);
+                render();
+            }
+            requestAnimationFrame(gameLoop);
+        }
+
+        function update(dt) {
+            State.flightTime += dt;
+
+            // Movimentação do Jogador
+            if (State.controlMode === 'follow') {
+                player.x += (mouseX - player.x) * 0.15;
+                player.y += (mouseY - player.y) * 0.15;
+            } else {
+                if (keys['w'] || keys['arrowup']) player.y -= player.speed;
+                if (keys['s'] || keys['arrowdown']) player.y += player.speed;
+                if (keys['a'] || keys['arrowleft']) player.x -= player.speed;
+                if (keys['d'] || keys['arrowright']) player.x += player.speed;
+
+                if (State.controlMode === 'autofire' && Math.random() < 0.1) {
+                    fireBullet();
+                }
+            }
+
+            // Limites da Tela
+            player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
+            player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, player.y));
+
+            // Atualizar Estrelas
+            stars.forEach(star => {
+                star.y += star.speed;
+                if (star.y > canvas.height) star.y = 0;
+            });
+
+            // Atualizar Tiros
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                bullets[i].y -= bullets[i].speed;
+                if (bullets[i].y < 0) {
+                    bullets.splice(i, 1);
+                }
+            }
+
+            // Atualizar Inimigos
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                let en = enemies[i];
+                en.y += en.speed;
+
+                // Colisão com Jogador
+                let distToPlayer = Math.hypot(player.x - en.x, player.y - en.y);
+                if (distToPlayer < player.radius + en.radius) {
+                    State.health -= 20;
+                    createExplosion(en.x, en.y, '#ff007f');
+                    enemies.splice(i, 1);
+                    updateHud();
+                    if (State.health <= 0) gameOver();
+                    continue;
+                }
+
+                // Colisão com Tiros
+                for (let j = bullets.length - 1; j >= 0; j--) {
+                    let b = bullets[j];
+                    let distToBullet = Math.hypot(b.x - en.x, b.y - en.y);
+                    if (distToBullet < b.radius + en.radius) {
+                        en.health--;
+                        State.shotsHit++;
+                        bullets.splice(j, 1);
+                        if (en.health <= 0) {
+                            createExplosion(en.x, en.y, '#ffe600');
+                            enemies.splice(i, 1);
+                            State.score += 100 * State.combo;
+                            State.kills++;
+                            updateHud();
+                        }
+                        break;
+                    }
+                }
+
+                // Inimigo passou da tela
+                if (en && en.y > canvas.height + 50) {
+                    enemies.splice(i, 1);
+                }
+            }
+
+            // Atualizar Partículas
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.alpha -= 0.02;
+                if (p.alpha <= 0) particles.splice(i, 1);
+            }
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Renderizar Estrelas
+            ctx.fillStyle = '#ffffff';
+            stars.forEach(star => {
+                ctx.globalAlpha = Math.random() * 0.8 + 0.2;
+                ctx.fillRect(star.x, star.y, star.size, star.size);
+            });
+            ctx.globalAlpha = 1;
+
+            // Renderizar Tiros (Bananas Neon)
+            ctx.fillStyle = '#ffe600';
+            bullets.forEach(b => {
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Renderizar Inimigos
+            enemies.forEach(en => {
+                ctx.fillStyle = '#ff007f';
+                ctx.beginPath();
+                ctx.arc(en.x, en.y, en.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#00f3ff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            });
+
+            // Renderizar Jogador
+            ctx.save();
+            ctx.translate(player.x, player.y);
+            ctx.fillStyle = '#00f3ff';
+            ctx.beginPath();
+            ctx.moveTo(0, -player.radius);
+            ctx.lineTo(-player.radius, player.radius);
+            ctx.lineTo(player.radius, player.radius);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = '#ffe600';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.restore();
+
+            // Renderizar Partículas
+            particles.forEach(p => {
+                ctx.save();
+                ctx.globalAlpha = p.alpha;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+        }
+
+        function updateHud() {
+            hudScore.textContent = String(State.score).padStart(6, '0');
+            hudHpBar.style.width = `${Math.max(0, State.health)}%`;
+            hudHpText.textContent = `${Math.max(0, State.health)}%`;
+            hudCombo.textContent = `x${State.combo}`;
+        }
+
+        function startGame() {
+            audio.init();
+            State.isPlaying = true;
+            State.isPaused = false;
+            State.score = 0;
+            State.health = 100;
+            State.kills = 0;
+            State.shotsFired = 0;
+            State.shotsHit = 0;
+            State.flightTime = 0;
+            bullets = [];
+            enemies = [];
+            particles = [];
+            updateHud();
+            overlayScreen.classList.add('hidden');
+        }
+
+        function gameOver() {
+            State.isPlaying = false;
+            if (State.score > State.highscore) {
+                State.highscore = State.score;
+                localStorage.setItem('banana_highscore', State.highscore);
+                hudHighscore.textContent = String(State.highscore).padStart(6, '0');
+            }
+            document.getElementById('menu-title').textContent = 'FIM DE JOGO';
+            document.getElementById('menu-subtitle').textContent = 'Sua nave foi destruída no setor!';
+            document.getElementById('game-stats-container').classList.remove('hidden');
+            document.getElementById('stat-score').textContent = State.score;
+            document.getElementById('stat-kills').textContent = State.kills;
+            let acc = State.shotsFired > 0 ? Math.round((State.shotsHit / State.shotsFired) * 100) : 0;
+            document.getElementById('stat-accuracy').textContent = `${acc}%`;
+            document.getElementById('stat-time').textContent = `${Math.floor(State.flightTime)}s`;
+            document.getElementById('btn-start-text').textContent = 'JOGAR NOVAMENTE';
+            overlayScreen.classList.remove('hidden');
+        }
+
+        function togglePause() {
+            State.isPaused = !State.isPaused;
+            if (State.isPaused) {
+                document.getElementById('menu-title').textContent = 'JOGO PAUSADO';
+                document.getElementById('menu-subtitle').textContent = 'Relaxe piloto, o setor aguarda seu retorno.';
+                document.getElementById('btn-start-text').textContent = 'RETOMAR MISSÃO';
+                overlayScreen.classList.remove('hidden');
+            } else {
+                overlayScreen.classList.add('hidden');
+            }
+        }
+
+        // Event Listeners de Interface
+        document.getElementById('btn-start-game').addEventListener('click', startGame);
+        document.getElementById('btn-toggle-settings').addEventListener('click', togglePause);
+
+        document.getElementById('btn-toggle-sound').addEventListener('click', () => {
+            audio.enabled = !audio.enabled;
+            const icon = document.getElementById('sound-icon');
+            const text = document.getElementById('sound-text');
+            if (audio.enabled) {
+                icon.className = 'fa-solid fa-volume-high';
+                text.textContent = 'SOM ON';
+            } else {
+                icon.className = 'fa-solid fa-volume-xmark';
+                text.textContent = 'SOM OFF';
+            }
+        });
+
+        // Upload de Avatar
+        document.getElementById('upload-avatar').addEventListener('change', e => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = event => {
+                    avatarPreview.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Seletor de Modo de Controle
+        document.querySelectorAll('.btn-control-mode').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.btn-control-mode').forEach(b => {
+                    b.classList.remove('bg-neonCyan/25', 'border-neonCyan', 'text-neonCyan');
+                    b.classList.add('bg-black/50', 'border-gray-700', 'text-gray-400');
+                });
+                btn.classList.remove('bg-black/50', 'border-gray-700', 'text-gray-400');
+                btn.classList.add('bg-neonCyan/25', 'border-neonCyan', 'text-neonCyan');
+                State.controlMode = btn.getAttribute('data-mode');
+            });
+        });
+
+        // Touch Control - Botão de Disparo Mobile
+        document.getElementById('btn-touch-fire').addEventListener('touchstart', e => {
+            e.preventDefault();
+            if (State.isPlaying && !State.isPaused) fireBullet();
+        });
+
+        requestAnimationFrame(gameLoop);
+    </script>
+</body>
+</html>
