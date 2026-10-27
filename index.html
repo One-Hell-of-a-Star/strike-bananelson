@@ -405,7 +405,7 @@
             keys[e.key.toLowerCase()] = false;
         });
 
-        // Mouse e Touch
+        // Mouse e Touch para rastreamento contínuo
         let mouseX = player.x;
         let mouseY = player.y;
 
@@ -414,6 +414,22 @@
             mouseY = e.clientY;
         });
 
+        // Suporte a toque contínuo na tela do celular
+        canvas.addEventListener('touchmove', e => {
+            if (e.touches.length > 0) {
+                mouseX = e.touches[0].clientX;
+                mouseY = e.touches[0].clientY;
+            }
+        }, { passive: true });
+
+        canvas.addEventListener('touchstart', e => {
+            if (e.touches.length > 0) {
+                mouseX = e.touches[0].clientX;
+                mouseY = e.touches[0].clientY;
+            }
+        }, { passive: true });
+
+        // Disparo automático opcional ou por clique/toque no modo follow
         canvas.addEventListener('click', () => {
             if (State.isPlaying && !State.isPaused && State.controlMode === 'follow') {
                 fireBullet();
@@ -480,15 +496,16 @@
 
             // Movimentação do Jogador
             if (State.controlMode === 'follow') {
-                player.x += (mouseX - player.x) * 0.15;
-                player.y += (mouseY - player.y) * 0.15;
+                // A nave persegue suavemente a posição atual do mouse ou dedo
+                player.x += (mouseX - player.x) * 0.2;
+                player.y += (mouseY - player.y) * 0.2;
             } else {
                 if (keys['w'] || keys['arrowup']) player.y -= player.speed;
                 if (keys['s'] || keys['arrowdown']) player.y += player.speed;
                 if (keys['a'] || keys['arrowleft']) player.x -= player.speed;
                 if (keys['d'] || keys['arrowright']) player.x += player.speed;
 
-                if (State.controlMode === 'autofire' && Math.random() < 0.1) {
+                if (State.controlMode === 'autofire' && Math.random() < 0.15) {
                     fireBullet();
                 }
             }
